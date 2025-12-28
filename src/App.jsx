@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import MovieCard from "./components/MovieCard";
 import Search from "./components/Search";
 import Spinner from "./components/Spinner";
-import { useDebounce } from "react-use";
 
-const API_BASE_URL = "https://api.themoviedb.org/3";
+const API_BASE_URL =
+  import.meta.env.VITE_TMDB_API_BASE_URL || "https://api.themoviedb.org/3";
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const API_OPTIONS = {
@@ -24,22 +24,33 @@ const App = () => {
 
   const [isLoading, setIsLoading] = useState(true);
 
-  const [deboundedSearchTerm, setDebouncedSearchTerm] = useState([]);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [isEmpty, setIsEmpty] = useState(false);
 
-  useDebounce(
-    () => {
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    },
-    500,
-    [searchTerm]
-  );
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   const fetchMovies = async (query ='') => {
     setIsLoading(true);
     setErrorMessage("");
+    setIsEmpty(false);
+
+    if (!API_KEY) {
+      setIsLoading(false);
+      setErrorMessage("Missing TMDB API key. Check your .env.local file.");
+      return;
+    }
 
     try {
-      const endpoint = query ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}` : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      const normalizedBaseUrl = API_BASE_URL.replace(/\/$/, "");
+      const endpoint = query
+        ? `${normalizedBaseUrl}/search/movie?query=${encodeURIComponent(query)}`
+        : `${normalizedBaseUrl}/discover/movie?sort_by=popularity.desc`;
       const response = await fetch(endpoint, API_OPTIONS);
 
       if (!response.ok) {
@@ -53,7 +64,9 @@ const App = () => {
         return;
       }
 
-      setMovieList(data.results);
+      const results = Array.isArray(data.results) ? data.results : [];
+      setMovieList(results);
+      setIsEmpty(results.length === 0);
     } catch (error) {
       console.error("Error fetching movies:", error);
       setErrorMessage("Failed to fetch movies. Please try again later.");
@@ -63,8 +76,8 @@ const App = () => {
   }; 
 
   useEffect(() => {
-    fetchMovies(deboundedSearchTerm);
-  }, [deboundedSearchTerm]);
+    fetchMovies(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   return (
     <main
@@ -91,6 +104,8 @@ const App = () => {
               <Spinner />
             ) : errorMessage ? (
               <p className="text-red-500">{errorMessage}</p>
+            ) : isEmpty ? (
+              <p className="text-light-200">No movies found.</p>
             ) : (
               <ul>
                 {movieList.map((movie) => (
