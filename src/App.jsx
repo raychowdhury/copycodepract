@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MovieCard from "./components/MovieCard";
+import MovieModal from "./components/MovieModal";
 import Search from "./components/Search";
 import Spinner from "./components/Spinner";
 
@@ -26,6 +27,10 @@ const App = () => {
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [isEmpty, setIsEmpty] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [selectedMovieDetails, setSelectedMovieDetails] = useState(null);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -79,6 +84,60 @@ const App = () => {
     fetchMovies(debouncedSearchTerm);
   }, [debouncedSearchTerm]);
 
+  useEffect(() => {
+    if (!selectedMovie) {
+      setSelectedMovieDetails(null);
+      setDetailsError("");
+      setIsDetailsLoading(false);
+      return;
+    }
+
+    if (!API_KEY) {
+      setDetailsError("Missing TMDB API key. Check your .env.local file.");
+      setIsDetailsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchMovieDetails = async () => {
+      setIsDetailsLoading(true);
+      setDetailsError("");
+      setSelectedMovieDetails(null);
+
+      try {
+        const normalizedBaseUrl = API_BASE_URL.replace(/\/$/, "");
+        const endpoint = `${normalizedBaseUrl}/movie/${selectedMovie.id}`;
+        const response = await fetch(endpoint, {
+          ...API_OPTIONS,
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch movie details");
+        }
+
+        const data = await response.json();
+        setSelectedMovieDetails(data);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Error fetching movie details:", error);
+          setDetailsError("Failed to load movie details.");
+        }
+      } finally {
+        setIsDetailsLoading(false);
+      }
+    };
+
+    fetchMovieDetails();
+
+    return () => controller.abort();
+  }, [selectedMovie]);
+
+  const combinedSelectedMovie = selectedMovieDetails
+    ? { ...selectedMovie, ...selectedMovieDetails }
+    : selectedMovie;
+
   return (
     <main
       style={{
@@ -109,13 +168,23 @@ const App = () => {
             ) : (
               <ul>
                 {movieList.map((movie) => (
-                  <MovieCard key={movie.id} movie={movie} />
+                  <MovieCard
+                    key={movie.id}
+                    movie={movie}
+                    onSelect={setSelectedMovie}
+                  />
                 ))}
               </ul>
             )}
           </section>
         </div>
       </div>
+      <MovieModal
+        movie={combinedSelectedMovie}
+        isLoading={isDetailsLoading}
+        errorMessage={detailsError}
+        onClose={() => setSelectedMovie(null)}
+      />
     </main>
   );
 };
