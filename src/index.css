@@ -140,6 +140,23 @@
       @apply text-gray-100 font-medium text-base;
     }
   }
+
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 opacity-0 pointer-events-none transition-opacity duration-200;
+  }
+
+  .modal-overlay.is-open {
+    @apply opacity-100 pointer-events-auto;
+  }
+
+  .modal-panel {
+    @apply w-full max-w-4xl overflow-hidden rounded-2xl bg-dark-100 text-white shadow-2xl transition-transform duration-200;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  .modal-panel.is-open {
+    transform: translateY(0) scale(1);
+  }
 }
 
 @utility text-gradient {
