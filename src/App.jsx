@@ -94,7 +94,7 @@ const App = () => {
                     />
                     <div className="movie-info">
                       <h3>{movie.title}</h3>
-                      <p>Rating: {movie.vote_average}</p>
+                      <p className="text-white">Rating: {movie.vote_average.toFixed(1)}/10</p>
                     </div>
                   </li>
                 ))}
