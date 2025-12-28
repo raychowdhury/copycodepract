@@ -1,6 +1,6 @@
-import React, { use } from "react";
+import { useEffect, useState } from "react";
+import MovieCard from "./components/MovieCard";
 import Search from "./components/Search";
-import { useState, useEffect } from "react";
 import Spinner from "./components/Spinner";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
@@ -83,20 +83,7 @@ const App = () => {
             ) : (
               <ul>
                 {movieList.map((movie) => (
-                  <li key={movie.id} className="movie-card">
-                    <img
-                      src={
-                        movie.poster_path
-                          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                          : "/no-image-available.png"
-                      }
-                      alt={movie.title}
-                    />
-                    <div className="movie-info">
-                      <h3>{movie.title}</h3>
-                      <p className="text-white">Rating: {movie.vote_average.toFixed(1)}/10</p>
-                    </div>
-                  </li>
+                  <MovieCard key={movie.id} movie={movie} />
                 ))}
               </ul>
             )}
